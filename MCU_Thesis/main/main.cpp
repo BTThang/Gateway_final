@@ -67,16 +67,16 @@ extern "C" {
 char REQUEST[512];
 
 using namespace ESPFirebase;
-FirebaseApp       app   = FirebaseApp(API_KEY);
-RTDB              db    = RTDB(&app, DATABASE_URL);
+FirebaseApp app         = FirebaseApp(API_KEY);
+RTDB db                 = RTDB(&app, DATABASE_URL);
 static const char TAG[] = "DS3231";
-uint32_t          txBuf[128];
-uint8_t           buf[128];
-char              timeBuf[128];
-uint8_t           bufferRx[10];
-uint8_t           receive[20];
-uint8_t           send_lora[40];
-uint8_t           send_mode[20];
+uint32_t txBuf[128];
+uint8_t buf[128];
+char timeBuf[128];
+uint8_t bufferRx[10];
+uint8_t receive[20];
+uint8_t send_lora[40];
+uint8_t send_mode[10];
 
 int Manu, Aut, Ala;
 int temperature, hum, soil, lights;
@@ -86,15 +86,15 @@ time_t set_time;
 time_t t3, t5, t7, t9;
 // struct tm *t2, *t4, *t6, *t8;
 
-time_t     t1 = time(NULL);
-struct tm* t2 = localtime(&t1);
-struct tm* t4 = localtime(&t1);
-struct tm* t6 = localtime(&t1);
-struct tm* t8 = localtime(&t1);
+time_t t1                           = time(NULL);
+struct tm* t2                       = localtime(&t1);
+struct tm* t4                       = localtime(&t1);
+struct tm* t6                       = localtime(&t1);
+struct tm* t8                       = localtime(&t1);
 
 RTC_DATA_ATTR static int boot_count = 0;
-EventGroupHandle_t       xLCDButtonHandle;
-EventGroupHandle_t       xUpdateFirebase;
+EventGroupHandle_t xLCDButtonHandle;
+EventGroupHandle_t xUpdateFirebase;
 static SemaphoreHandle_t xLoraData;
 
 TaskHandle_t xHandle1 = NULL;
@@ -107,15 +107,15 @@ TaskHandle_t xHandle7 = NULL;
 
 adv_button_event_id_t event;
 adv_button_event_id_t event1;
-adv_button_config_t   button_cfg = ADVANCED_BUTTON_CONFIG_DEFAULT();
+adv_button_config_t button_cfg = ADVANCED_BUTTON_CONFIG_DEFAULT();
 
-const struct addrinfo hints = {
-    .ai_family   = AF_INET,
-    .ai_socktype = SOCK_STREAM,
+const struct addrinfo hints    = {
+       .ai_family   = AF_INET,
+       .ai_socktype = SOCK_STREAM,
 };
 struct addrinfo* res;
-struct in_addr*  addr;
-int              s;
+struct in_addr* addr;
+int s;
 
 typedef enum {
     MENU_LCD_1 = 0,
@@ -148,7 +148,7 @@ struct {
     alarm_t pump2;
     alarm_t humidifier1;
     alarm_t humidifier2;
-    bool    sta;
+    bool sta;
 } firebase_data;
 
 typedef enum {
@@ -164,9 +164,9 @@ struct {
     sensor_param_data_t humid;
     sensor_param_data_t lux;
     sensor_param_data_t ground;
-    cursor_enum         cursor;
-    bool                select;
-    bool                edit_param;
+    cursor_enum cursor;
+    bool select;
+    bool edit_param;
 } menu4_data;
 
 struct {
@@ -198,18 +198,18 @@ Json::Value data9;
 Json::Value data8;
 Json::Value data7;
 
-Json::Value  data11;
-Json::Value  data12;
-Json::Value  data13;
+Json::Value data11;
+Json::Value data12;
+Json::Value data13;
 Json::Reader reader;
 // declare function
 
 void time_sync_notification_cb(struct timeval* tv);
 
 static esp_err_t i2c_master_init(void);
-static void      initialize_sntp(void);
-void             getClock(void* pvParameters);
-void             getLoRa(void* pvParameters);
+static void initialize_sntp(void);
+void getClock(void* pvParameters);
+void getLoRa(void* pvParameters);
 
 void menubutton_callback(adv_button_event_id_t event, void* params);
 void modebutton_callback(adv_button_event_id_t event, void* params);
@@ -229,15 +229,15 @@ void button_mode_sys(void* pvParameters);
 // void update_firebase_man(void* pvParameters);
 // void update_firebase_alarm(void* pvParameters);
 
-void        handle_cursor();
-void        handle_lcd_menu();
-void        mode_hold();
-void        handledown_edit();
-void        handleup_edit();
-void        lcd_menu2(void);
-void        menu_lcd3(void* pvParameters);
-void        menu_lcd4(void* pvParameters);
-void        menu_lcd5(void* pvParameters);
+void handle_cursor();
+void handle_lcd_menu();
+void mode_hold();
+void handledown_edit();
+void handleup_edit();
+void lcd_menu2(void);
+void menu_lcd3(void* pvParameters);
+void menu_lcd4(void* pvParameters);
+void menu_lcd5(void* pvParameters);
 static void http_get_task(void* pvParameters);
 
 void lcd_display(void);
@@ -246,10 +246,8 @@ void lcd_display(void);
 void button_relay1(adv_button_event_id_t event, void* params) {
     switch (event) {
         case ADV_BUTTON_EVENT_SINGLE_PRESS:
-            if (Rle1 == 1)
-                Rle1 = 2;
-            else
-                Rle1 = 1;
+            if (Rle1 == 1) Rle1 = 2;
+            else Rle1 = 1;
             break;
         default:
             break;
@@ -260,10 +258,8 @@ void button_relay1(adv_button_event_id_t event, void* params) {
 void button_relay2(adv_button_event_id_t event, void* params) {
     switch (event) {
         case ADV_BUTTON_EVENT_SINGLE_PRESS:
-            if (Rle2 == 1)
-                Rle2 = 2;
-            else
-                Rle2 = 1;
+            if (Rle2 == 1) Rle2 = 2;
+            else Rle2 = 1;
             // status_relay.relay2 ^= 1;
             // xEventGroupSetBits(xLCDButtonHandle, RELAY2_BIT);
             break;
@@ -276,18 +272,14 @@ void button_relay2(adv_button_event_id_t event, void* params) {
 void button_relay3(adv_button_event_id_t event, void* params) {
     switch (event) {
         case ADV_BUTTON_EVENT_SINGLE_PRESS:
-            if (Rle3 == 1)
-                Rle3 = 2;
-            else
-                Rle3 = 1;
+            if (Rle3 == 1) Rle3 = 2;
+            else Rle3 = 1;
             // xEventGroupSetBits(xLCDButtonHandle, RELAY3_BIT);
             break;
 
         case ADV_BUTTON_EVENT_HOLD_PRESS:
-            if (Rle4 == 1)
-                Rle4 = 2;
-            else
-                Rle4 = 1;
+            if (Rle4 == 1) Rle4 = 2;
+            else Rle4 = 1;
             break;
         default:
             break;
@@ -309,8 +301,7 @@ void modebutton_callback(adv_button_event_id_t event, void* params) {
                     menu4_data.cursor = TEMP;
                     LCD_setCursor(6, 0);
                     blink();
-                } else
-                    noBlink();
+                } else noBlink();
             }
             break;
         default:
@@ -454,64 +445,65 @@ void mode_systems(void* pvParameters) {
                     menu4_data.temp.max_val = temperature;
                     data1["Auto/Temp_high"] = menu4_data.temp.max_val;
                     db.patchData("TGarden", data1);
-                    send_mode[1] = menu4_data.temp.max_val;
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    send_mode[2] = menu4_data.temp.max_val;
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 } else {
                     std::string Temp_max =
                         db.getData("TGarden/Auto/Temp_high").asString();
                     menu4_data.temp.max_val = atoi(Temp_max.c_str());
                     temperature             = atoi(Temp_max.c_str());
-                    send_mode[1]            = menu4_data.temp.max_val;
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    send_mode[2]            = menu4_data.temp.max_val;
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 }
+                lora_send_packet((uint8_t*)send_mode, 10);
                 // =============================Hum_ON=========================================
                 if (menu4_data.humid.min_val != hum) {
                     menu4_data.humid.min_val = hum;
                     data1["Auto/Hum"]        = menu4_data.humid.min_val;
                     db.patchData("TGarden", data1);
-                    send_mode[2] = menu4_data.humid.min_val;
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    send_mode[3] = menu4_data.humid.min_val;
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 } else {
                     std::string Hum_min =
                         db.getData("TGarden/Auto/Hum").asString();
                     menu4_data.humid.min_val = atoi(Hum_min.c_str());
                     hum                      = atoi(Hum_min.c_str());
-                    send_mode[2]             = menu4_data.humid.min_val;
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    send_mode[3]             = menu4_data.humid.min_val;
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 }
-                lora_send_packet((uint8_t*)send_mode, 5);
+                lora_send_packet((uint8_t*)send_mode, 10);
                 // Lights
                 if (menu4_data.lux.min_val != lights) {
                     menu4_data.lux.min_val = lights;
                     data1["Auto/Lights"]   = menu4_data.lux.min_val;
                     db.patchData("TGarden", data1);
-                    send_mode[3] = menu4_data.lux.min_val;
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    send_mode[4] = menu4_data.lux.min_val;
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 } else {
                     std::string Lights_min =
                         db.getData("TGarden/Auto/Lights").asString();
                     menu4_data.lux.min_val = atoi(Lights_min.c_str());
                     lights                 = atoi(Lights_min.c_str());
-                    send_mode[3]           = menu4_data.lux.min_val;
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    send_mode[4]           = menu4_data.lux.min_val;
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 }
-                lora_send_packet((uint8_t*)send_mode, 5);
+                lora_send_packet((uint8_t*)send_mode, 10);
                 // ========================================Ground_ON============================================
                 if (menu4_data.ground.min_val != soil) {
                     menu4_data.ground.min_val = soil;
                     data1["Auto/Soil"]        = menu4_data.ground.min_val;
                     db.patchData("TGarden", data1);
-                    send_mode[4] = menu4_data.ground.min_val;
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    send_mode[5] = menu4_data.ground.min_val;
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 } else {
                     std::string Soil_min =
                         db.getData("TGarden/Auto/Soil").asString();
                     menu4_data.ground.min_val = atoi(Soil_min.c_str());
                     soil                      = atoi(Soil_min.c_str());
-                    send_mode[4]              = menu4_data.ground.min_val;
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    send_mode[5]              = menu4_data.ground.min_val;
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 }
-                lora_send_packet((uint8_t*)send_mode, 5);
+                lora_send_packet((uint8_t*)send_mode, 10);
                 xSemaphoreGive(xLoraData);
                 break;
             case MODE_MANUAL:
@@ -522,38 +514,38 @@ void mode_systems(void* pvParameters) {
                     status_relay.relay1 = Rle1;
                     data10["S1_Lamp"]   = status_relay.relay1;
                     db.patchData("RELAY1", data10);
-                    send_mode[1] = status_relay.relay1;
+                    send_mode[2] = status_relay.relay1;
                     // send_mode[1] = 'status_relay.relay1';
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 } else {
                     std::string Lamp = db.getData("RELAY1/S1_Lamp").asString();
                     status_relay.relay1 = atoi(Lamp.c_str());
                     Rle1                = atoi(Lamp.c_str());
-                    send_mode[1]        = (uint8_t)status_relay.relay1;
+                    send_mode[2]        = (uint8_t)status_relay.relay1;
                     // send_mode[1]        = 'status_relay.relay1';
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 }
 
-                lora_send_packet((uint8_t*)send_mode, 5);
+                lora_send_packet((uint8_t*)send_mode, 10);
                 // =====================================Relay
                 // 2=====================================
                 if (status_relay.relay2 != Rle2) {
                     status_relay.relay2 = Rle2;
                     data9["S2_Fan"]     = status_relay.relay2;
                     db.patchData("RELAY2", data9);
-                    send_mode[2] = status_relay.relay2;
+                    send_mode[3] = status_relay.relay2;
                     // send_mode[2] = 'status_relay.relay2';
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 } else {
                     std::string Fan = db.getData("RELAY2/S2_Fan").asString();
                     status_relay.relay2 = atoi(Fan.c_str());
                     Rle2                = atoi(Fan.c_str());
-                    send_mode[2]        = status_relay.relay2;
+                    send_mode[3]        = status_relay.relay2;
                     // send_mode[2]        = 'status_relay.relay2';
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 }
                 // printf("Relay 2222222:::::::::%d\n", send_mode[2]);
-                lora_send_packet((uint8_t*)send_mode, 5);
+                lora_send_packet((uint8_t*)send_mode, 10);
 
                 // ========================================Relay
                 // 3==================================
@@ -561,38 +553,38 @@ void mode_systems(void* pvParameters) {
                     status_relay.relay3 = Rle3;
                     data8["S3_Pump"]    = status_relay.relay3;
                     db.patchData("RELAY3", data8);
-                    send_mode[3] = status_relay.relay3;
+                    send_mode[4] = status_relay.relay3;
                     // send_mode[3] = 'status_relay.relay3';
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 } else {
                     std::string Pump = db.getData("RELAY3/S3_Pump").asString();
                     status_relay.relay3 = atoi(Pump.c_str());
                     Rle3                = atoi(Pump.c_str());
-                    send_mode[3]        = (uint8_t)status_relay.relay3;
+                    send_mode[4]        = (uint8_t)status_relay.relay3;
                     // send_mode[3]        = 'status_relay.relay3';
 
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 }
-                lora_send_packet((uint8_t*)send_mode, 5);
+                lora_send_packet((uint8_t*)send_mode, 10);
                 // ========================================Relay
                 // 4==================================
                 if (status_relay.relay4 != Rle4) {
                     status_relay.relay4 = Rle4;
                     data7["S4_Hum"]     = status_relay.relay4;
                     db.patchData("RELAY4", data7);
-                    send_mode[4] = status_relay.relay4;
+                    send_mode[5] = status_relay.relay4;
                     // send_mode[4] = 'status_relay.relay4';
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 } else {
                     std::string Humidity =
                         db.getData("RELAY4/S4_Hum").asString();
                     status_relay.relay4 = atoi(Humidity.c_str());
                     Rle4                = atoi(Humidity.c_str());
-                    send_mode[4]        = status_relay.relay4;
+                    send_mode[5]        = status_relay.relay4;
                     // send_mode[4]        = 'status_relay.relay4';
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    lora_send_packet((uint8_t*)send_mode, 10);
                 }
-                lora_send_packet((uint8_t*)send_mode, 5);
+                lora_send_packet((uint8_t*)send_mode, 10);
                 xSemaphoreGive(xLoraData);
                 break;
             case MODE_ALARM:
@@ -622,25 +614,25 @@ void mode_systems(void* pvParameters) {
                     firebase_data.fan1.activity = atoi(Alarm_Fan1_Ac.c_str());
 
                     // Compare time1111111111
-                    t2->tm_hour = firebase_data.fan1.hour;
-                    t2->tm_min  = firebase_data.fan1.minutes;
-                    t3          = mktime(t2);
+                    t2->tm_hour                 = firebase_data.fan1.hour;
+                    t2->tm_min                  = firebase_data.fan1.minutes;
+                    t3                          = mktime(t2);
                     // printf("Thoi gian thuc te: %ld", ba);
 
                     // printf("Thoi gian cai dat: %ld", t3);
                     if ((t3) < ba &&
                         ba < (t3 + (firebase_data.fan1.activity * 60))) {
-                        send_mode[2] = '5';
-                        lora_send_packet((uint8_t*)send_mode, 5);
+                        send_mode[3] = '5';
+                        lora_send_packet((uint8_t*)send_mode, 10);
 
                         // printf(
                         //     "========Thoi Gian bang nhau===== Bat thiet "
                         //     "bi11111111111111111\n");
                     } else {
-                        send_mode[2] = '6';
-                        lora_send_packet((uint8_t*)send_mode, 5);
+                        send_mode[3] = '6';
+                        lora_send_packet((uint8_t*)send_mode, 10);
                     };
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    lora_send_packet((uint8_t*)send_mode, 10);
 
                     // std::string Alarm_Fan1_Sta =
                     //     db.getData("TGarden/Alarm/Fan/AmFan1/Status")
@@ -695,22 +687,22 @@ void mode_systems(void* pvParameters) {
                     firebase_data.lamp1.activity = atoi(Alarm_Lamp1_Ac.c_str());
 
                     // Compare time222222222
-                    t4->tm_hour = firebase_data.lamp1.hour;
-                    t4->tm_min  = firebase_data.lamp1.minutes;
-                    t5          = mktime(t4);
+                    t4->tm_hour                  = firebase_data.lamp1.hour;
+                    t4->tm_min                   = firebase_data.lamp1.minutes;
+                    t5                           = mktime(t4);
                     if (t5 < ba &&
                         ba < (t5 + (firebase_data.lamp1.activity * 60))) {
                         // printf(
                         //     "========Thoi Gian bang nhau===== Bat thiet "
                         //     "bi2222\n");
-                        send_mode[1] = '5';
+                        send_mode[2] = '5';
 
-                        lora_send_packet((uint8_t*)send_mode, 5);
+                        lora_send_packet((uint8_t*)send_mode, 10);
                     } else {
-                        send_mode[1] = '6';
-                        lora_send_packet((uint8_t*)send_mode, 5);
+                        send_mode[2] = '6';
+                        lora_send_packet((uint8_t*)send_mode, 10);
                     };
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    lora_send_packet((uint8_t*)send_mode, 10);
                     // std::string Alarm_Lamp1_Sta =
                     //     db.getData("TGarden/Alarm/Lamp/AmLamp1/Status")
                     //         .asString();
@@ -760,22 +752,22 @@ void mode_systems(void* pvParameters) {
                     firebase_data.pump1.activity = atoi(Alarm_Pump1_Ac.c_str());
 
                     // Compare time3333333
-                    t6->tm_hour = firebase_data.pump1.hour;
-                    t6->tm_min  = firebase_data.pump1.minutes;
-                    t7          = mktime(t4);
+                    t6->tm_hour                  = firebase_data.pump1.hour;
+                    t6->tm_min                   = firebase_data.pump1.minutes;
+                    t7                           = mktime(t4);
                     if (t7 < ba &&
                         ba < (t7 + (firebase_data.pump1.activity * 60))) {
                         // printf(
                         //     "========Thoi Gian bang nhau===== Bat thiet "
                         //     "bi3333\n");
-                        send_mode[3] = '5';
-                        lora_send_packet((uint8_t*)send_mode, 5);
+                        send_mode[4] = '5';
+                        lora_send_packet((uint8_t*)send_mode, 10);
 
                     } else {
-                        send_mode[3] = '6';
-                        lora_send_packet((uint8_t*)send_mode, 5);
+                        send_mode[4] = '6';
+                        lora_send_packet((uint8_t*)send_mode, 10);
                     }
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    lora_send_packet((uint8_t*)send_mode, 10);
                     // Pump2---------------------------
                     // std::string Alarm_Pump2_Hour =
                     //     db.getData("TGarden/Alarm/Pump/AmPump2/Hour")
@@ -831,14 +823,14 @@ void mode_systems(void* pvParameters) {
                         // printf(
                         //     "========Thoi Gian bang nhau===== Bat thiet "
                         //     "bi44444\n");
-                        send_mode[4] = '5';
+                        send_mode[5] = '5';
 
-                        lora_send_packet((uint8_t*)send_mode, 5);
+                        lora_send_packet((uint8_t*)send_mode, 10);
                     } else {
-                        send_mode[4] = '6';
-                        lora_send_packet((uint8_t*)send_mode, 5);
+                        send_mode[5] = '6';
+                        lora_send_packet((uint8_t*)send_mode, 10);
                     }
-                    lora_send_packet((uint8_t*)send_mode, 5);
+                    lora_send_packet((uint8_t*)send_mode, 10);
                     // Hum2-----------------------------------
                     // std::string Alarm_Hum2_Hour =
                     //     db.getData("TGarden/Alarm/Humidifier/AmHum2/Hour")
@@ -1156,9 +1148,9 @@ void setClock(void* pvParameters) {
              "Connecting to WiFi and getting time over NTP.");
 
     // update 'now' variable with current time
-    time_t    now;
+    time_t now;
     struct tm timeinfo;
-    char      strftime_buf[64];
+    char strftime_buf[64];
     time(&now);
 
     ESP_LOGI(pcTaskGetTaskName(0), "%ld", now);
@@ -1206,15 +1198,16 @@ void getClock(void* pvParameters) {
     char txtBuf[128];
     if (ds3231_init(I2C_NUM_0) != ESP_OK) {
         ESP_LOGE(pcTaskGetTaskName(0), "Could not init device decriptior. ");
-        while (1) vTaskDelay(10);
+        while (1)
+            vTaskDelay(10);
     }
 
     // Get RTC date and time
     while (1) {
         // printf("Gia tri Posix ==========%d", time(&ba));
 
-        float       temp;
-        struct tm   rtcinfo;
+        float temp;
+        struct tm rtcinfo;
         EventBits_t bits = xEventGroupGetBits(s_wifi_event_group);
         LCD_home();
         LCD_clearScreen();
@@ -1283,41 +1276,44 @@ void receive_data_LoRa(void* pvParameters) {
         lora_receive();
         if (lora_received()) {
             lora_receive_packet(receive, 20);
-            bufferRx[0] = receive[10];
-            bufferRx[1] = receive[11];
-            bufferRx[2] = receive[12];
-            bufferRx[3] = receive[13];
-            bufferRx[4] = receive[14];
+            printf("Received: %x\n", receive[0]);
+            if (receive[19] == 0xA) {
+                bufferRx[0] = receive[10];
+                bufferRx[1] = receive[11];
+                bufferRx[2] = receive[12];
+                bufferRx[3] = receive[13];
+                bufferRx[4] = receive[14];
 
-            // bufferRx[5] = receive[15];
-            // bufferRx[6] = receive[16];
-            // bufferRx[7] = receive[17];
-            // bufferRx[8] = receive[18];
-            for (int i = 10; i < 18; i++) {
-                printf("Received: %d\n", receive[i]);
-            }
-            printf("Kich thuoc cua size of: %d\n", sizeof(receive));
-            lora_receive();
-            data5["sensor/dht22/temp"] = receive[10];
-            db.patchData("TGarden", data5);
-            data5["sensor/dht22/hum"] = receive[11];
-            db.patchData("TGarden", data5);
-            data5["sensor/lights"] = receive[12];
-            db.patchData("TGarden", data5);
-            data5["sensor/rain"] = receive[13];
-            db.patchData("TGarden", data5);
-            data5["sensor/soil"] = receive[14];
-            db.patchData("TGarden", data5);
+                // bufferRx[5] = receive[15];
+                // bufferRx[6] = receive[16];
+                // bufferRx[7] = receive[17];
+                // bufferRx[8] = receive[18];
+                for (int i = 10; i < 18; i++) {
+                    printf("Received: %d\n", receive[i]);
+                }
+                printf("Kich thuoc cua size of: %d\n", sizeof(receive));
+                lora_receive();
+                data5["sensor/dht22/temp"] = receive[10];
+                db.patchData("TGarden", data5);
+                data5["sensor/dht22/hum"] = receive[11];
+                db.patchData("TGarden", data5);
+                data5["sensor/lights"] = receive[12];
+                db.patchData("TGarden", data5);
+                data5["sensor/rain"] = receive[13];
+                db.patchData("TGarden", data5);
+                data5["sensor/soil"] = receive[14];
+                db.patchData("TGarden", data5);
 
-            if (mode_sys == MODE_AUTO || mode_sys == MODE_ALARM) {
-                data2["lamp"] = receive[15];
-                db.patchData("Auto", data2);
-                data2["fan"] = receive[16];
-                db.patchData("Auto", data2);
-                data2["pump"] = receive[17];
-                db.patchData("Auto", data2);
-                data2["hum"] = receive[18];
-                db.patchData("Auto", data2);
+                if (mode_sys == MODE_AUTO || mode_sys == MODE_ALARM) {
+                    data2["lamp"] = receive[15];
+                    db.patchData("Auto", data2);
+                    data2["fan"] = receive[16];
+                    db.patchData("Auto", data2);
+                    data2["pump"] = receive[17];
+                    db.patchData("Auto", data2);
+                    data2["hum"] = receive[18];
+                    db.patchData("Auto", data2);
+                }
             }
         }
         xSemaphoreGive(xLoraData);
@@ -1373,6 +1369,7 @@ static void http_get_task(void* pvParameters) {
 void read_mode_firebase(void* pvParameters) {
     while (1) {
         xSemaphoreTake(xLoraData, portMAX_DELAY);
+        send_mode[0]       = 0xF;
         std::string Manual = db.getData("TGarden/S1_Manual").asString();
         Manu               = atoi(Manual.c_str());
         std::string Auto   = db.getData("TGarden/S1_Auto").asString();
@@ -1382,20 +1379,20 @@ void read_mode_firebase(void* pvParameters) {
 
         if (Aut == 1) {
             mode_sys     = MODE_AUTO;
-            send_mode[0] = 'A';
-            lora_send_packet((uint8_t*)send_mode, 1);
+            send_mode[1] = 'A';
+            lora_send_packet((uint8_t*)send_mode, 10);
             printf("Auto------------\n");
         }
         if (Manu == 1) {
             mode_sys     = MODE_MANUAL;
-            send_mode[0] = 'M';
-            lora_send_packet((uint8_t*)send_mode, 1);
+            send_mode[1] = 'M';
+            lora_send_packet((uint8_t*)send_mode, 10);
             printf("Manual------------\n");
         }
         if (Ala == 1) {
             mode_sys     = MODE_ALARM;
-            send_mode[0] = 'L';
-            lora_send_packet((uint8_t*)send_mode, 1);
+            send_mode[1] = 'L';
+            lora_send_packet((uint8_t*)send_mode, 10);
             printf("Alarm------------\n");
         }
         // xEventGroupSetBits(xLCDButtonHandle, MODE_SYSTEMS);
@@ -1427,8 +1424,8 @@ void lcd_display(void) {
 
 void app_main(void) {
     ++boot_count;
-    xLCDButtonHandle = xEventGroupCreate();
-    xLoraData        = xSemaphoreCreateMutex();
+    xLCDButtonHandle               = xEventGroupCreate();
+    xLoraData                      = xSemaphoreCreateMutex();
 
     adv_button_config_t button_cfg = ADVANCED_BUTTON_CONFIG_DEFAULT();
 
