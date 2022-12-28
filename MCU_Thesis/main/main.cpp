@@ -73,12 +73,24 @@ static const char TAG[] = "DS3231";
 uint32_t          txBuf[128];
 uint8_t           buf[128];
 char              timeBuf[128];
-uint8_t           bufferRx[20];
+uint8_t           bufferRx[10];
 uint8_t           receive[20];
 uint8_t           send_lora[40];
 uint8_t           send_mode[20];
 
+int Manu, Aut, Ala;
 int temperature, hum, soil, lights;
+
+time_t ba;
+time_t set_time;
+time_t t3, t5, t7, t9;
+// struct tm *t2, *t4, *t6, *t8;
+
+time_t     t1 = time(NULL);
+struct tm* t2 = localtime(&t1);
+struct tm* t4 = localtime(&t1);
+struct tm* t6 = localtime(&t1);
+struct tm* t8 = localtime(&t1);
 
 RTC_DATA_ATTR static int boot_count = 0;
 EventGroupHandle_t       xLCDButtonHandle;
@@ -110,6 +122,7 @@ typedef enum {
     MENU_LCD_2,
     MENU_LCD_3,
     MENU_LCD_4,
+    MENU_LCD_5,
     MENU_LCD_MAX,
 } menu_lcd_t;
 menu_lcd_t menu_lcd = MENU_LCD_1;
@@ -224,6 +237,7 @@ void        handleup_edit();
 void        lcd_menu2(void);
 void        menu_lcd3(void* pvParameters);
 void        menu_lcd4(void* pvParameters);
+void        menu_lcd5(void* pvParameters);
 static void http_get_task(void* pvParameters);
 
 void lcd_display(void);
@@ -242,30 +256,6 @@ void button_relay1(adv_button_event_id_t event, void* params) {
     }
 }
 
-// void task_relay1(void* pvParameters) {
-//     while (1) {
-//         if (xEventGroupWaitBits(xLCDButtonHandle, RELAY1_BIT, true, false,
-//                                 portMAX_DELAY)) {
-//             // if (xLoraData != NULL) {
-//             //     if (xSemaphoreTake(xLoraData, portMAX_DELAY) == pdTRUE) {
-//             if (status_relay.relay1 == true) {
-//                 data["S1_ESP"] = 1;
-//                 db.patchData("RELAY1", data);
-//                 send_lora[0] = 1;
-//                 lora_send_packet((uint8_t*)send_lora, 1);
-//             } else if (status_relay.relay1 == false) {
-//                 data["S1_ESP"] = 0;
-//                 db.patchData("RELAY1", data);
-//                 send_lora[0] = 2;
-//                 lora_send_packet((uint8_t*)send_lora, 1);
-//             }
-//             //         xSemaphoreGive(xLoraData);
-//             //     }
-//             // }
-//         }
-//     }
-// }
-
 /*-------------------------------------Button_RELAY2_Callback------------------------------------*/
 void button_relay2(adv_button_event_id_t event, void* params) {
     switch (event) {
@@ -281,26 +271,6 @@ void button_relay2(adv_button_event_id_t event, void* params) {
             break;
     }
 }
-
-// void task_relay2(void* pvParameters) {
-//     while (1) {
-//         if (xEventGroupWaitBits(xLCDButtonHandle, RELAY2_BIT, true, false,
-//                                 portMAX_DELAY)) {
-//             if (xLoraData != NULL) {
-//                 if (xSemaphoreTake(xLoraData, portMAX_DELAY) == pdTRUE) {
-//                     if (status_relay.relay2 == true) {
-//                         data2["S2_Fan"] = 1;
-//                         db.patchData("RELAY2", data2);
-//                     } else if (status_relay.relay2 == false) {
-//                         data2["S2_Fan"] = 0;
-//                         db.patchData("RELAY2", data2);
-//                     }
-//                     xSemaphoreGive(xLoraData);
-//                 }
-//             }
-//         }
-//     }
-// }
 
 /*-------------------------------------Button_RELAY3_Callback------------------------------------*/
 void button_relay3(adv_button_event_id_t event, void* params) {
@@ -323,26 +293,6 @@ void button_relay3(adv_button_event_id_t event, void* params) {
             break;
     }
 }
-
-// void task_relay3(void* pvParameters) {
-//     while (1) {
-//         if (xEventGroupWaitBits(xLCDButtonHandle, RELAY3_BIT, true, false,
-//                                 portMAX_DELAY)) {
-//             if (xLoraData != NULL) {
-//                 if (xSemaphoreTake(xLoraData, portMAX_DELAY) == pdTRUE) {
-//                     if (status_relay.relay3 == true) {
-//                         data3["S3_Pump"] = 1;
-//                         db.patchData("RELAY3", data3);
-//                     } else if (status_relay.relay3 == false) {
-//                         data3["S3_Pump"] = 0;
-//                         db.patchData("RELAY3", data3);
-//                     }
-//                     xSemaphoreGive(xLoraData);
-//                 }
-//             }
-//         }
-//     }
-// }
 
 /*-------------------------------------Button_MODE_Callback------------------------------------*/
 void modebutton_callback(adv_button_event_id_t event, void* params) {
@@ -422,34 +372,18 @@ void handle_cursor(void) {
             LCD_setCursor(6, 0);
             blink();
             break;
-        // case TEMP_MAX:
-        //     LCD_setCursor(10, 0);
-        //     blink();
-        //     break;
         case HUMID:
             LCD_setCursor(6, 1);
             blink();
             break;
-        // case HUMID_MAX:
-        //     LCD_setCursor(10, 1);
-        //     blink();
-        //     break;
         case LUX:
             LCD_setCursor(6, 2);
             blink();
             break;
-        // case LUX_MAX:
-        //     LCD_setCursor(10, 2);
-        //     blink();
-        //     break;
         case GROUND:
             LCD_setCursor(6, 3);
             blink();
             break;
-        // case GROUND_MAX:
-        //     LCD_setCursor(10, 3);
-        //     blink();
-        //     break;
         default:
             break;
     }
@@ -509,7 +443,8 @@ void button_mode_sys(void* pvParameters) {
     }
 }
 struct tm thoigian;
-void      mode_systems(void* pvParameters) {
+
+void mode_systems(void* pvParameters) {
     while (1) {
         switch (mode_sys) {
             case MODE_AUTO:
@@ -663,7 +598,14 @@ void      mode_systems(void* pvParameters) {
             case MODE_ALARM:
                 xSemaphoreTake(xLoraData, portMAX_DELAY);
                 {
-                    ds3231_get_time(&thoigian);
+                    // ds3231_get_time(&thoigian);
+                    time(&ba);
+                    ba = ba + 45;
+                    // ESP_LOGI(pcTaskGetTaskName(0),
+                    //          "hahahahahahahahahahaha::::::%ld\n", t3);
+
+                    // ESP_LOGI(pcTaskGetTaskName(0),
+                    //          "hhuhuhuhuhaaaaaaaaaaa:::%ld\n", ba);
                     // Fan1---------------------
                     std::string Alarm_Fan1_Hour =
                         db.getData("TGarden/Alarm/Fan/AmFan1/Hour").asString();
@@ -679,41 +621,54 @@ void      mode_systems(void* pvParameters) {
                             .asString();
                     firebase_data.fan1.activity = atoi(Alarm_Fan1_Ac.c_str());
 
-                    if (firebase_data.fan1.hour == thoigian.tm_hour &&
-                        firebase_data.fan1.minutes == thoigian.tm_min) {
-                        printf(
-                            "========Thoi Gian bang nhau===== Bat thiet "
-                                 "bi11111111111111111\n");
-                    }
-                    printf("Thoi gian thucte: %d_%d====setup: %d_%d",
-                                thoigian.tm_hour, thoigian.tm_min,
-                                firebase_data.fan1.hour, firebase_data.fan1.minutes);
+                    // Compare time1111111111
+                    t2->tm_hour = firebase_data.fan1.hour;
+                    t2->tm_min  = firebase_data.fan1.minutes;
+                    t3          = mktime(t2);
+                    // printf("Thoi gian thuc te: %ld", ba);
+
+                    // printf("Thoi gian cai dat: %ld", t3);
+                    if ((t3) < ba &&
+                        ba < (t3 + (firebase_data.fan1.activity * 60))) {
+                        send_mode[2] = '5';
+                        lora_send_packet((uint8_t*)send_mode, 5);
+
+                        // printf(
+                        //     "========Thoi Gian bang nhau===== Bat thiet "
+                        //     "bi11111111111111111\n");
+                    } else {
+                        send_mode[2] = '6';
+                        lora_send_packet((uint8_t*)send_mode, 5);
+                    };
+                    lora_send_packet((uint8_t*)send_mode, 5);
 
                     // std::string Alarm_Fan1_Sta =
                     //     db.getData("TGarden/Alarm/Fan/AmFan1/Status")
                     //         .asString();
                     // firebase_data.fan1.statu = atoi(Alarm_Fan1_Sta.c_str());
                     // Fan2-----------------------
-                    std::string Alarm_Fan2_Hour =
-                        db.getData("TGarden/Alarm/Fan/AmFan2/Hour").asString();
-                    firebase_data.fan2.hour = atoi(Alarm_Fan2_Hour.c_str());
+                    // std::string Alarm_Fan2_Hour =
+                    //     db.getData("TGarden/Alarm/Fan/AmFan2/Hour").asString();
+                    // firebase_data.fan2.hour = atoi(Alarm_Fan2_Hour.c_str());
 
-                    std::string Alarm_Fan2_Minu =
-                        db.getData("TGarden/Alarm/Fan/AmFan2/Minutes")
-                            .asString();
-                    firebase_data.fan2.minutes = atoi(Alarm_Fan2_Minu.c_str());
+                    // std::string Alarm_Fan2_Minu =
+                    //     db.getData("TGarden/Alarm/Fan/AmFan2/Minutes")
+                    //         .asString();
+                    // firebase_data.fan2.minutes =
+                    // atoi(Alarm_Fan2_Minu.c_str());
 
-                    std::string Alarm_Fan2_Ac =
-                        db.getData("TGarden/Alarm/Fan/AmFan2/Activity")
-                            .asString();
-                    firebase_data.fan2.activity = atoi(Alarm_Fan2_Ac.c_str());
+                    // std::string Alarm_Fan2_Ac =
+                    //     db.getData("TGarden/Alarm/Fan/AmFan2/Activity")
+                    //         .asString();
+                    // firebase_data.fan2.activity =
+                    // atoi(Alarm_Fan2_Ac.c_str());
 
-                    if (firebase_data.fan2.hour == thoigian.tm_hour &&
-                        firebase_data.fan2.minutes == thoigian.tm_min) {
-                        printf(
-                            "========Thoi Gian bang nhau===== Bat thiet "
-                                 "bi1111111111111111\n");
-                    }
+                    // if (firebase_data.fan2.hour == thoigian.tm_hour &&
+                    //     firebase_data.fan2.minutes == thoigian.tm_min) {
+                    //     printf(
+                    //         "========Thoi Gian bang nhau===== Bat thiet "
+                    //         "bi1111111111111111\n");
+                    // }
 
                     // std::string Alarm_Fan2_Sta =
                     //     db.getData("TGarden/Alarm/Fan/AmFan2/Status")
@@ -739,41 +694,53 @@ void      mode_systems(void* pvParameters) {
                             .asString();
                     firebase_data.lamp1.activity = atoi(Alarm_Lamp1_Ac.c_str());
 
-                    if (firebase_data.lamp1.hour == thoigian.tm_hour &&
-                        firebase_data.lamp1.minutes == thoigian.tm_min) {
-                        printf(
-                            "========Thoi Gian bang nhau===== Bat thiet "
-                                 "bi222222222222222\n");
-                    }
+                    // Compare time222222222
+                    t4->tm_hour = firebase_data.lamp1.hour;
+                    t4->tm_min  = firebase_data.lamp1.minutes;
+                    t5          = mktime(t4);
+                    if (t5 < ba &&
+                        ba < (t5 + (firebase_data.lamp1.activity * 60))) {
+                        // printf(
+                        //     "========Thoi Gian bang nhau===== Bat thiet "
+                        //     "bi2222\n");
+                        send_mode[1] = '5';
 
+                        lora_send_packet((uint8_t*)send_mode, 5);
+                    } else {
+                        send_mode[1] = '6';
+                        lora_send_packet((uint8_t*)send_mode, 5);
+                    };
+                    lora_send_packet((uint8_t*)send_mode, 5);
                     // std::string Alarm_Lamp1_Sta =
                     //     db.getData("TGarden/Alarm/Lamp/AmLamp1/Status")
                     //         .asString();
                     // firebase_data.lamp1.statu =
                     // atoi(Alarm_Lamp1_Sta.c_str());
                     // Lamp2-------------------------------------------
-                    std::string Alarm_Lamp2_Hour =
-                        db.getData("TGarden/Alarm/Lamp/AmLamp2/Hour")
-                            .asString();
-                    firebase_data.lamp2.hour = atoi(Alarm_Lamp2_Hour.c_str());
+                    // std::string Alarm_Lamp2_Hour =
+                    //     db.getData("TGarden/Alarm/Lamp/AmLamp2/Hour")
+                    //         .asString();
+                    // firebase_data.lamp2.hour =
+                    // atoi(Alarm_Lamp2_Hour.c_str());
 
-                    std::string Alarm_Lamp2_Minu =
-                        db.getData("TGarden/Alarm/Lamp/AmLamp2/Minutes")
-                            .asString();
-                    firebase_data.lamp2.minutes =
-                        atoi(Alarm_Lamp2_Minu.c_str());
+                    // std::string Alarm_Lamp2_Minu =
+                    //     db.getData("TGarden/Alarm/Lamp/AmLamp2/Minutes")
+                    //         .asString();
+                    // firebase_data.lamp2.minutes =
+                    //     atoi(Alarm_Lamp2_Minu.c_str());
 
-                    std::string Alarm_Lamp2_Ac =
-                        db.getData("TGarden/Alarm/Lamp/AmLamp2/Activity")
-                            .asString();
-                    firebase_data.lamp2.activity = atoi(Alarm_Lamp2_Ac.c_str());
+                    // std::string Alarm_Lamp2_Ac =
+                    //     db.getData("TGarden/Alarm/Lamp/AmLamp2/Activity")
+                    //         .asString();
+                    // firebase_data.lamp2.activity =
+                    // atoi(Alarm_Lamp2_Ac.c_str());
 
-                    if (firebase_data.lamp2.hour == thoigian.tm_hour &&
-                        firebase_data.lamp2.minutes == thoigian.tm_min) {
-                        printf(
-                            "========Thoi Gian bang nhau===== Bat thiet "
-                                 "bi222222222222222222\n");
-                    }
+                    // if (firebase_data.lamp2.hour == thoigian.tm_hour &&
+                    //     firebase_data.lamp2.minutes == thoigian.tm_min) {
+                    //     printf(
+                    //         "========Thoi Gian bang nhau===== Bat thiet "
+                    //         "bi222222222222222222\n");
+                    // }
                     // Pump1-----------------------------------
                     // Doc gia tri hen gio cua bom nuoc
                     std::string Alarm_Pump1_Hour =
@@ -792,35 +759,48 @@ void      mode_systems(void* pvParameters) {
                             .asString();
                     firebase_data.pump1.activity = atoi(Alarm_Pump1_Ac.c_str());
 
-                    if (firebase_data.pump1.hour == thoigian.tm_hour &&
-                        firebase_data.pump1.minutes == thoigian.tm_min) {
-                        printf(
-                            "========Thoi Gian bang nhau===== Bat thiet "
-                                 "bi3333333333333\n");
+                    // Compare time3333333
+                    t6->tm_hour = firebase_data.pump1.hour;
+                    t6->tm_min  = firebase_data.pump1.minutes;
+                    t7          = mktime(t4);
+                    if (t7 < ba &&
+                        ba < (t7 + (firebase_data.pump1.activity * 60))) {
+                        // printf(
+                        //     "========Thoi Gian bang nhau===== Bat thiet "
+                        //     "bi3333\n");
+                        send_mode[3] = '5';
+                        lora_send_packet((uint8_t*)send_mode, 5);
+
+                    } else {
+                        send_mode[3] = '6';
+                        lora_send_packet((uint8_t*)send_mode, 5);
                     }
+                    lora_send_packet((uint8_t*)send_mode, 5);
                     // Pump2---------------------------
-                    std::string Alarm_Pump2_Hour =
-                        db.getData("TGarden/Alarm/Pump/AmPump2/Hour")
-                            .asString();
-                    firebase_data.pump2.hour = atoi(Alarm_Pump2_Hour.c_str());
+                    // std::string Alarm_Pump2_Hour =
+                    //     db.getData("TGarden/Alarm/Pump/AmPump2/Hour")
+                    //         .asString();
+                    // firebase_data.pump2.hour =
+                    // atoi(Alarm_Pump2_Hour.c_str());
 
-                    std::string Alarm_Pump2_Minu =
-                        db.getData("TGarden/Alarm/Pump/AmPump2/Minutes")
-                            .asString();
-                    firebase_data.pump2.minutes =
-                        atoi(Alarm_Pump2_Minu.c_str());
+                    // std::string Alarm_Pump2_Minu =
+                    //     db.getData("TGarden/Alarm/Pump/AmPump2/Minutes")
+                    //         .asString();
+                    // firebase_data.pump2.minutes =
+                    //     atoi(Alarm_Pump2_Minu.c_str());
 
-                    std::string Alarm_Pump2_Ac =
-                        db.getData("TGarden/Alarm/Pump/AmPump2/Activity")
-                            .asString();
-                    firebase_data.pump2.activity = atoi(Alarm_Pump2_Ac.c_str());
+                    // std::string Alarm_Pump2_Ac =
+                    //     db.getData("TGarden/Alarm/Pump/AmPump2/Activity")
+                    //         .asString();
+                    // firebase_data.pump2.activity =
+                    // atoi(Alarm_Pump2_Ac.c_str());
 
-                    if (firebase_data.pump2.hour == thoigian.tm_hour &&
-                        firebase_data.pump2.minutes == thoigian.tm_min) {
-                        printf(
-                            "========Thoi Gian bang nhau===== Bat thiet "
-                                 "bi3333333333333\n");
-                    }
+                    // if (firebase_data.pump2.hour == thoigian.tm_hour &&
+                    //     firebase_data.pump2.minutes == thoigian.tm_min) {
+                    //     printf(
+                    //         "========Thoi Gian bang nhau===== Bat thiet "
+                    //         "bi3333333333333\n");
+                    // }
 
                     // Hum1------------------------
                     // Doc gia tri hen gio cua may phun suong
@@ -842,37 +822,48 @@ void      mode_systems(void* pvParameters) {
                     firebase_data.humidifier1.activity =
                         atoi(Alarm_Hum1_Ac.c_str());
 
-                    if (firebase_data.humidifier1.hour == thoigian.tm_hour &&
-                        firebase_data.humidifier1.minutes == thoigian.tm_min) {
-                        printf(
-                            "========Thoi Gian bang nhau===== Bat thiet "
-                                 "bi4444444444444444\n");
+                    // Compare time444444
+                    t8->tm_hour = firebase_data.humidifier1.hour;
+                    t8->tm_min  = firebase_data.humidifier1.minutes;
+                    t9          = mktime(t4);
+                    if (t9 < ba &&
+                        ba < (t9 + (firebase_data.humidifier1.activity * 60))) {
+                        // printf(
+                        //     "========Thoi Gian bang nhau===== Bat thiet "
+                        //     "bi44444\n");
+                        send_mode[4] = '5';
+
+                        lora_send_packet((uint8_t*)send_mode, 5);
+                    } else {
+                        send_mode[4] = '6';
+                        lora_send_packet((uint8_t*)send_mode, 5);
                     }
+                    lora_send_packet((uint8_t*)send_mode, 5);
                     // Hum2-----------------------------------
-                    std::string Alarm_Hum2_Hour =
-                        db.getData("TGarden/Alarm/Humidifier/AmHum2/Hour")
-                            .asString();
-                    firebase_data.humidifier2.hour =
-                        atoi(Alarm_Hum2_Hour.c_str());
+                    // std::string Alarm_Hum2_Hour =
+                    //     db.getData("TGarden/Alarm/Humidifier/AmHum2/Hour")
+                    //         .asString();
+                    // firebase_data.humidifier2.hour =
+                    //     atoi(Alarm_Hum2_Hour.c_str());
 
-                    std::string Alarm_Hum2_Minu =
-                        db.getData("TGarden/Alarm/Humidifier/AmHum2/Minutes")
-                            .asString();
-                    firebase_data.humidifier2.minutes =
-                        atoi(Alarm_Hum2_Minu.c_str());
+                    // std::string Alarm_Hum2_Minu =
+                    //     db.getData("TGarden/Alarm/Humidifier/AmHum2/Minutes")
+                    //         .asString();
+                    // firebase_data.humidifier2.minutes =
+                    //     atoi(Alarm_Hum2_Minu.c_str());
 
-                    std::string Alarm_Hum2_Ac =
-                        db.getData("TGarden/Alarm/Humidifier/AmHum2/Activity")
-                            .asString();
-                    firebase_data.humidifier2.activity =
-                        atoi(Alarm_Hum2_Ac.c_str());
+                    // std::string Alarm_Hum2_Ac =
+                    //     db.getData("TGarden/Alarm/Humidifier/AmHum2/Activity")
+                    //         .asString();
+                    // firebase_data.humidifier2.activity =
+                    //     atoi(Alarm_Hum2_Ac.c_str());
 
-                    if (firebase_data.humidifier2.hour == thoigian.tm_hour &&
-                        firebase_data.humidifier2.hour == thoigian.tm_min) {
-                        printf(
-                            "========Thoi Gian bang nhau===== Bat thiet "
-                                 "bi4444444444444444\n");
-                    }
+                    // if (firebase_data.humidifier2.hour == thoigian.tm_hour &&
+                    //     firebase_data.humidifier2.hour == thoigian.tm_min) {
+                    //     printf(
+                    //         "========Thoi Gian bang nhau===== Bat thiet "
+                    //         "bi4444444444444444\n");
+                    // }
                 }
                 xSemaphoreGive(xLoraData);
                 break;
@@ -891,8 +882,8 @@ void lcd_task1(void* pvParameters) {
                                 portMAX_DELAY)) {
             switch (menu_lcd) {
                 case MENU_LCD_2:
-                    if (xHandle3 != NULL) {
-                        vTaskDelete(xHandle3);
+                    if (xHandle4 != NULL) {
+                        vTaskDelete(xHandle4);
                     }
                     xTaskCreate(&getClock, "getClock", 1024 * 4, NULL, 6,
                                 &xHandle1);
@@ -911,6 +902,13 @@ void lcd_task1(void* pvParameters) {
                     }
                     xTaskCreate(&menu_lcd4, "MENU_LCD4", 1024 * 4, NULL, 6,
                                 &xHandle3);
+                    break;
+                case MENU_LCD_5:
+                    if (xHandle3 != NULL) {
+                        vTaskDelete(xHandle3);
+                    }
+                    xTaskCreate(&menu_lcd5, "MENU_LCD5", 1024 * 4, NULL, 6,
+                                &xHandle4);
                     break;
                 default:
                     break;
@@ -987,6 +985,96 @@ void menu_lcd4(void* pvParameters) {
         vTaskDelay(2000 / portTICK_RATE_MS);
     }
 }
+
+// MenuLCD5=============
+void menu_lcd5(void* pvParameters) {
+    while (1) {
+        LCD_clearScreen();
+        // Display on temperature
+        LCD_setCursor(0, 0);
+        if (Manu == 1) {
+            sprintf(timeBuf, "----MODE: Manual----");
+            LCD_writeStr(timeBuf);
+        } else if (Aut == 1) {
+            sprintf(timeBuf, "--MODE: Automation--");
+            LCD_writeStr(timeBuf);
+        } else if (Ala == 1) {
+            sprintf(timeBuf, "---MODE: Alarm---");
+            LCD_writeStr(timeBuf);
+        }
+
+        // Display on humidity
+        LCD_setCursor(0, 1);
+        sprintf(timeBuf, "TRANG THAI THIET BI");
+        LCD_writeStr(timeBuf);
+
+        // Display on temperature
+        if (mode_sys == MODE_MANUAL) {
+            LCD_setCursor(0, 2);
+
+            if (status_relay.relay1 == 1 && status_relay.relay2 == 1) {
+                sprintf(timeBuf, "  DEN:ON--QUAT:ON");
+                LCD_writeStr(timeBuf);
+            } else if (status_relay.relay1 == 1 && status_relay.relay2 == 2) {
+                sprintf(timeBuf, "  DEN:ON--QUAT:OFF");
+                LCD_writeStr(timeBuf);
+            } else if (status_relay.relay1 == 2 && status_relay.relay2 == 1) {
+                sprintf(timeBuf, "  DEN:OFF--QUAT:ON");
+                LCD_writeStr(timeBuf);
+            } else if (status_relay.relay1 == 2 && status_relay.relay2 == 2) {
+                sprintf(timeBuf, "  DEN:OFF--QUAT:OFF");
+                LCD_writeStr(timeBuf);
+            }
+            LCD_setCursor(0, 3);
+
+            if (status_relay.relay3 == 1 && status_relay.relay4 == 1) {
+                sprintf(timeBuf, "  BOM:ON--SUONG:ON");
+                LCD_writeStr(timeBuf);
+            } else if (status_relay.relay3 == 1 && status_relay.relay4 == 2) {
+                sprintf(timeBuf, "  BOM:ON--SUONG:OFF");
+                LCD_writeStr(timeBuf);
+            } else if (status_relay.relay3 == 2 && status_relay.relay4 == 1) {
+                sprintf(timeBuf, "  BOM:OFF--SUONG:ON");
+                LCD_writeStr(timeBuf);
+            } else if (status_relay.relay3 == 2 && status_relay.relay4 == 2) {
+                sprintf(timeBuf, "  BOM:OFF--SUONG:OFF");
+                LCD_writeStr(timeBuf);
+            }
+        } else {
+            LCD_setCursor(0, 2);
+            if (receive[15] == 1 && receive[16] == 1) {
+                sprintf(timeBuf, "  DEN:ON--QUAT:ON");
+                LCD_writeStr(timeBuf);
+            } else if (receive[15] == 1 && receive[16] == 2) {
+                sprintf(timeBuf, "  DEN:ON--QUAT:OFF");
+                LCD_writeStr(timeBuf);
+            } else if (receive[15] == 2 && receive[16] == 1) {
+                sprintf(timeBuf, "  DEN:OFF--QUAT:ON");
+                LCD_writeStr(timeBuf);
+            } else if (receive[15] == 2 && receive[16] == 2) {
+                sprintf(timeBuf, "  DEN:OFF--QUAT:OFF");
+                LCD_writeStr(timeBuf);
+            }
+            LCD_setCursor(0, 3);
+
+            if (receive[17] == 1 && receive[18] == 1) {
+                sprintf(timeBuf, "  BOM:ON--SUONG:ON");
+                LCD_writeStr(timeBuf);
+            } else if (receive[17] == 1 && receive[18] == 2) {
+                sprintf(timeBuf, "  BOM:ON--SUONG:OFF");
+                LCD_writeStr(timeBuf);
+            } else if (receive[17] == 2 && receive[18] == 1) {
+                sprintf(timeBuf, "  BOM:OFF--SUONG:ON");
+                LCD_writeStr(timeBuf);
+            } else if (receive[17] == 2 && receive[18] == 2) {
+                sprintf(timeBuf, "  BOM:OFF--SUONG:OFF");
+                LCD_writeStr(timeBuf);
+            }
+        }
+
+        vTaskDelay(2000 / portTICK_RATE_MS);
+    }
+}
 /*Handle Edit*/
 void handleup_edit() {
     if (menu4_data.cursor == 0) {
@@ -1025,13 +1113,24 @@ void time_sync_notification_cb(struct timeval* tv) {
 
 /*------------------------------------------------------------Init_SNTP--------------------------------------------------------------------------------------------*/
 static void initialize_sntp(void) {
+    // ESP_LOGI(TAG, "Initializing SNTP");
+    // sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    // // sntp_setservername(0, "pool.ntp.org");
+    // ESP_LOGI(TAG, "Your NTP Server is %s", NTP_SERVER);
+    // sntp_setservername(0, NTP_SERVER);
+    // sntp_set_time_sync_notification_cb(time_sync_notification_cb);
+    // sntp_init();
     ESP_LOGI(TAG, "Initializing SNTP");
+    sntp_servermode_dhcp(1);
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    // sntp_setservername(0, "pool.ntp.org");
-    ESP_LOGI(TAG, "Your NTP Server is %s", NTP_SERVER);
-    sntp_setservername(0, NTP_SERVER);
+    sntp_setservername(0, "vn.pool.ntp.org");
     sntp_set_time_sync_notification_cb(time_sync_notification_cb);
+    sntp_set_sync_mode(SNTP_SYNC_MODE_SMOOTH);
     sntp_init();
+
+    /* Set timezone GMT+7 */
+    setenv("TZ", "CST-7", 1);
+    tzset();
 }
 
 /*------------------------------------------------------------Init_I2c_Master
@@ -1061,7 +1160,9 @@ void setClock(void* pvParameters) {
     struct tm timeinfo;
     char      strftime_buf[64];
     time(&now);
-    now = now + (CONFIG_TIMEZONE * 60 * 60);
+
+    ESP_LOGI(pcTaskGetTaskName(0), "%ld", now);
+    // now = now + (CONFIG_TIMEZONE * 60 * 60);
     localtime_r(&now, &timeinfo);
     strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
     ESP_LOGI(pcTaskGetTaskName(0), "The current date/time is: %s",
@@ -1103,7 +1204,6 @@ void setClock(void* pvParameters) {
 
 void getClock(void* pvParameters) {
     char txtBuf[128];
-
     if (ds3231_init(I2C_NUM_0) != ESP_OK) {
         ESP_LOGE(pcTaskGetTaskName(0), "Could not init device decriptior. ");
         while (1) vTaskDelay(10);
@@ -1111,6 +1211,8 @@ void getClock(void* pvParameters) {
 
     // Get RTC date and time
     while (1) {
+        // printf("Gia tri Posix ==========%d", time(&ba));
+
         float       temp;
         struct tm   rtcinfo;
         EventBits_t bits = xEventGroupGetBits(s_wifi_event_group);
@@ -1133,6 +1235,8 @@ void getClock(void* pvParameters) {
                  "%04d-%02d-%02d %02d:%02d:%02d, %.2f deg Cel", rtcinfo.tm_year,
                  rtcinfo.tm_mon + 1, rtcinfo.tm_mday, rtcinfo.tm_hour,
                  rtcinfo.tm_min, rtcinfo.tm_sec, temp);
+
+        // set_time = mktime(&rtcinfo);
 
         // Display on time
         LCD_setCursor(0, 0);
@@ -1159,10 +1263,6 @@ void getClock(void* pvParameters) {
 
         // Display status relay
 
-        LCD_setCursor(0, 3);
-        sprintf(txtBuf, "RL1:%d-RL2:%d-RL3:%d", status_relay.relay1,
-                status_relay.relay2, status_relay.relay3);
-        LCD_writeStr(txtBuf);
         // if (status_relay.relay1 == true) {
         // }
         // LCD_setCursor(0, 3);
@@ -1176,43 +1276,49 @@ void getClock(void* pvParameters) {
 
 /*--------------------------------------------------------------Update_Time_now--------------------------------------------------------------*/
 
-void send_data_LoRa(void* pvParameters) {
-    while (1) {
-        xSemaphoreTake(xLoraData, portMAX_DELAY);
-        lora_send_packet((uint8_t*)send_lora, 20);
-        // printf("Send Data\n");
-        xSemaphoreGive(xLoraData);
-        vTaskDelay(300 / portTICK_RATE_MS);
-    }
-}
-
 void receive_data_LoRa(void* pvParameters) {
     while (1) {
         xSemaphoreTake(xLoraData, portMAX_DELAY);
         printf("Xin chao TMT\n");
         lora_receive();
-        if (lora_received() == 1) {
+        if (lora_received()) {
             lora_receive_packet(receive, 20);
             bufferRx[0] = receive[10];
             bufferRx[1] = receive[11];
             bufferRx[2] = receive[12];
             bufferRx[3] = receive[13];
             bufferRx[4] = receive[14];
-            for (int i = 10; i < 15; i++) {
+
+            // bufferRx[5] = receive[15];
+            // bufferRx[6] = receive[16];
+            // bufferRx[7] = receive[17];
+            // bufferRx[8] = receive[18];
+            for (int i = 10; i < 18; i++) {
                 printf("Received: %d\n", receive[i]);
             }
             printf("Kich thuoc cua size of: %d\n", sizeof(receive));
             lora_receive();
-            data5["sensor/dht22/temp"] = bufferRx[0];
+            data5["sensor/dht22/temp"] = receive[10];
             db.patchData("TGarden", data5);
-            data5["sensor/dht22/hum"] = bufferRx[1];
+            data5["sensor/dht22/hum"] = receive[11];
             db.patchData("TGarden", data5);
-            data5["sensor/lights"] = bufferRx[2];
+            data5["sensor/lights"] = receive[12];
             db.patchData("TGarden", data5);
-            data5["sensor/rain"] = bufferRx[3];
+            data5["sensor/rain"] = receive[13];
             db.patchData("TGarden", data5);
-            data5["sensor/soil"] = bufferRx[4];
+            data5["sensor/soil"] = receive[14];
             db.patchData("TGarden", data5);
+
+            if (mode_sys == MODE_AUTO || mode_sys == MODE_ALARM) {
+                data2["lamp"] = receive[15];
+                db.patchData("Auto", data2);
+                data2["fan"] = receive[16];
+                db.patchData("Auto", data2);
+                data2["pump"] = receive[17];
+                db.patchData("Auto", data2);
+                data2["hum"] = receive[18];
+                db.patchData("Auto", data2);
+            }
         }
         xSemaphoreGive(xLoraData);
         vTaskDelay(10000 / portTICK_RATE_MS);
@@ -1260,7 +1366,7 @@ static void http_get_task(void* pvParameters) {
         // xSemaphoreGive(xLoraData);
         //     }
         // }
-        vTaskDelay(10000 / portTICK_PERIOD_MS);
+        vTaskDelay(60000 / portTICK_PERIOD_MS);
     }
 }
 
@@ -1268,11 +1374,11 @@ void read_mode_firebase(void* pvParameters) {
     while (1) {
         xSemaphoreTake(xLoraData, portMAX_DELAY);
         std::string Manual = db.getData("TGarden/S1_Manual").asString();
-        int         Manu   = atoi(Manual.c_str());
+        Manu               = atoi(Manual.c_str());
         std::string Auto   = db.getData("TGarden/S1_Auto").asString();
-        int         Aut    = atoi(Auto.c_str());
+        Aut                = atoi(Auto.c_str());
         std::string Al     = db.getData("TGarden/Alarm/Status").asString();
-        int         Ala    = atoi(Al.c_str());
+        Ala                = atoi(Al.c_str());
 
         if (Aut == 1) {
             mode_sys     = MODE_AUTO;
@@ -1376,10 +1482,10 @@ void app_main(void) {
     xTaskCreate(&read_mode_firebase, "Read Mode", 1024 * 8, NULL, 9, NULL);
 
     xTaskCreate(&mode_systems, "MODE SYSTEMS", 1024 * 10, NULL, 9, NULL);
-    xTaskCreate(&receive_data_LoRa, "Data LoRa Received", 1024 * 4, NULL, 8,
+    xTaskCreate(&receive_data_LoRa, "Data LoRa Received", 1024 * 4, NULL, 10,
                 NULL);
     xTaskCreate(&button_mode_sys, "Mode Button", 1024 * 4, NULL, 10, NULL);
-    // xTaskCreate(&http_get_task, "http_get_task", 4096, NULL, 6, NULL);
+    xTaskCreate(&http_get_task, "http_get_task", 4096, NULL, 6, NULL);
 
     // lcd_display();
 }

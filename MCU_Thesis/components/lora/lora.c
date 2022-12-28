@@ -547,7 +547,7 @@ void lora_send_packet(uint8_t* buf, int size) {
     /*
      * Transfer data to radio.
      */
-    xSemaphoreTake(lora_lock, portMAX_DELAY);
+    // xSemaphoreTake(lora_lock, portMAX_DELAY);
 
     lora_idle();
     lora_write_reg(REG_FIFO_ADDR_PTR, 0);
@@ -567,9 +567,9 @@ void lora_send_packet(uint8_t* buf, int size) {
     while ((lora_read_reg(REG_IRQ_FLAGS) & IRQ_TX_DONE_MASK) == 0)
         vTaskDelay(2);
     //  lora_idle();
-    lora_write_reg(REG_IRQ_FLAGS, IRQ_TX_DONE_MASK);
+    // lora_write_reg(REG_IRQ_FLAGS, IRQ_TX_DONE_MASK);
 
-    xSemaphoreGive(lora_lock);
+    // xSemaphoreGive(lora_lock);
 }
 
 /**
@@ -581,9 +581,9 @@ void lora_send_packet(uint8_t* buf, int size) {
 int lora_receive_packet(uint8_t* buf, int size) {
     int len = 0;
 
-    xSemaphoreTake(lora_lock, portMAX_DELAY);
+    // xSemaphoreTake(lora_lock, portMAX_DELAY);
 
-    lora_receive();
+    // lora_receive();
     /*
      * Check interrupts.
      */
@@ -615,7 +615,7 @@ int lora_receive_packet(uint8_t* buf, int size) {
     for (int i = 0; i < len; i++) *buf++ = lora_read_reg(REG_FIFO);
 #endif
 
-    xSemaphoreGive(lora_lock);
+    // xSemaphoreGive(lora_lock);
     return len;
 }
 
