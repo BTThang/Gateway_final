@@ -1278,11 +1278,16 @@ void receive_data_LoRa(void* pvParameters) {
             lora_receive_packet(receive, 20);
             printf("Received: %x\n", receive[0]);
             if (receive[19] == 0xA) {
+                                printf("gia tri A;;;;;;;;;;;\n");
                 bufferRx[0] = receive[10];
                 bufferRx[1] = receive[11];
-                bufferRx[2] = receive[12];
-                bufferRx[3] = receive[13];
-                bufferRx[4] = receive[14];
+                // bufferRx[2] = receive[12];
+                // bufferRx[3] = receive[13];
+                bufferRx[5] = receive[14];
+                // bufferRx[6] = receive[15];
+                bufferRx[7] = receive[16];
+                bufferRx[8] = receive[17];
+                bufferRx[9] = receive[18];
 
                 // bufferRx[5] = receive[15];
                 // bufferRx[6] = receive[16];
@@ -1297,22 +1302,59 @@ void receive_data_LoRa(void* pvParameters) {
                 db.patchData("TGarden", data5);
                 data5["sensor/dht22/hum"] = receive[11];
                 db.patchData("TGarden", data5);
-                data5["sensor/lights"] = receive[12];
-                db.patchData("TGarden", data5);
-                data5["sensor/rain"] = receive[13];
-                db.patchData("TGarden", data5);
+                // data5["sensor/lights"] = receive[12];
+                // db.patchData("TGarden", data5);
+                // data5["sensor/rain"] = receive[13];
+                // db.patchData("TGarden", data5);
                 data5["sensor/soil"] = receive[14];
                 db.patchData("TGarden", data5);
 
                 if (mode_sys == MODE_AUTO || mode_sys == MODE_ALARM) {
-                    data2["lamp"] = receive[15];
-                    db.patchData("Auto", data2);
+                    // data2["lamp"] = receive[15];
+                    // db.patchData("Auto", data2);
                     data2["fan"] = receive[16];
                     db.patchData("Auto", data2);
                     data2["pump"] = receive[17];
                     db.patchData("Auto", data2);
                     data2["hum"] = receive[18];
                     db.patchData("Auto", data2);
+                }
+            } else if (receive[19] == 0xB) {
+                printf("gia tri B;;;;;;;;;;;\n");
+                // bufferRx[0] = receive[10];
+                // bufferRx[1] = receive[11];
+                bufferRx[2] = receive[12];
+                bufferRx[3] = receive[13];
+                // bufferRx[5] = receive[14];
+                bufferRx[6] = receive[15];
+                // bufferRx[7] = receive[16];
+                // bufferRx[8] = receive[17];
+                // bufferRx[9] = receive[18];
+                for (int i = 10; i < 18; i++) {
+                    printf("Received: %d\n", receive[i]);
+                }
+                printf("Kich thuoc cua size of: %d\n", sizeof(receive));
+                lora_receive();
+                // data5["sensor/dht22/temp"] = receive[10];
+                // db.patchData("TGarden", data5);
+                // data5["sensor/dht22/hum"] = receive[11];
+                // db.patchData("TGarden", data5);
+                data5["sensor/lights"] = receive[12];
+                db.patchData("TGarden", data5);
+                data5["sensor/rain"] = receive[13];
+                db.patchData("TGarden", data5);
+                // data5["sensor/soil"] = receive[14];
+                // db.patchData("TGarden", data5);
+
+                if (mode_sys == MODE_AUTO || mode_sys == MODE_ALARM) {
+                    data2["lamp"] = receive[15];
+                    db.patchData("Auto", data2);
+                    // data2["fan"] = receive[16];
+                    // db.patchData("Auto", data2);
+                    // data2["pump"] = receive[17];
+                    // db.patchData("Auto", data2);
+                    // data2["hum"] = receive[18];
+                    // db.patchData("Auto", data2);
                 }
             }
         }
